@@ -3,6 +3,8 @@ name = "business-card-distribution"
 version = "0.1.0"
 description = "Record and replay WXAI V0 arm trajectories for handing out business cards"
 readme = "README.md"
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
 authors = [
     { name = "shantanuparab-tr", email = "shantanu@trossenrobotics.com" }
 ]

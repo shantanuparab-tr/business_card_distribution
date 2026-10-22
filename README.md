@@ -8,6 +8,8 @@ instead (the *quirky* motion).
 The repository ships with recorded trajectories, so you can run the demo
 straight away, or record your own with a leader arm.
 
+For a feature overview, see [FEATURES.md](FEATURES.md).
+
 - [How it works](#how-it-works)
 - [Hardware and network](#hardware-and-network)
 - [Install](#install)
@@ -247,3 +249,7 @@ the follower's measured positions, sampled at 100 Hz.
 | `Missing trajectories` | Record the missing motion, or point `--dir` at the right folder. |
 | `bcd-record` or `bcd-replay` can't connect while the service runs | Only one program can drive the arm. `sudo systemctl stop bcd-replay.service`. |
 | Arm jerks between motions | Lower `--max-velocity` / `--max-acceleration`. |
+
+## License
+
+BSD 3-Clause. See [LICENSE](LICENSE).
