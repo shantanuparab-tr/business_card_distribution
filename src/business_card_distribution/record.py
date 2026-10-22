@@ -13,7 +13,7 @@ import numpy as np
 import trossen_arm
 
 from . import config, trajectory
-from .keyboard import EnterListener
+from .keyboard import StdinEnterListener
 
 
 def parse_args() -> argparse.Namespace:
@@ -46,7 +46,7 @@ def main() -> None:
     print("Connecting to arms...")
     leader = config.connect(args.leader_ip, trossen_arm.StandardEndEffector.wxai_v0_leader)
     follower = config.connect(args.follower_ip, trossen_arm.StandardEndEffector.wxai_v0_follower)
-    keys = EnterListener()
+    keys = StdinEnterListener()
 
     times: list[float] = []
     positions: list[list[float]] = []

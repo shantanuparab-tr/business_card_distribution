@@ -46,3 +46,54 @@ def save(path: Path, times: list[float], positions: list[list[float]]) -> None:
 def load(path: Path) -> Trajectory:
     data = np.loadtxt(path, delimiter=",", skiprows=1, ndmin=2)
     return Trajectory(times=data[:, 0], positions=data[:, 1:])
+
+
+def trim_leading_rest(traj: Trajectory, pose: np.ndarray, tolerance: float) -> Trajectory:
+    """Drop the leading samples where the arm is still within ``tolerance`` rad of ``pose``.
+
+    Recordings start at the home pose, so they usually open with a second or two
+    of nothing happening. Only the six arm joints are compared; the gripper's
+    range (meters) is too small for a radian tolerance. One at-rest sample is kept
+    so playback starts from rest. A trajectory that never leaves ``pose`` is
+    returned unchanged.
+    """
+    distance = np.max(np.abs(traj.positions[:, :6] - pose[:6]), axis=1)
+    moving = np.flatnonzero(distance > tolerance)
+    if len(moving) == 0 or moving[0] <= 1:
+        return traj
+    start = moving[0] - 1
+    return Trajectory(times=traj.times[start:] - traj.times[start], positions=traj.positions[start:])
+
+
+def blend(
+    q0: np.ndarray,
+    v0: np.ndarray,
+    q1: np.ndarray,
+    v1: np.ndarray,
+    max_velocity: float,
+    max_acceleration: float,
+    rate: float = 100.0,
+    min_duration: float = 0.3,
+) -> Trajectory:
+    """Quintic transition from (q0, v0) to (q1, v1), starting and ending with zero acceleration.
+
+    Matching velocity at both ends means switching motions mid-move has no jerk.
+    The duration scales with the largest arm-joint distance: a rest-to-rest quintic
+    over distance d and time T peaks at 1.875*d/T velocity and 5.77*d/T^2
+    acceleration, so T is the smallest time that keeps both under their limits.
+    """
+    distance = float(np.max(np.abs(q1[:6] - q0[:6])))
+    duration = max(
+        min_duration,
+        1.875 * distance / max_velocity,
+        np.sqrt(5.774 * distance / max_acceleration),
+    )
+    T = duration
+    dq = q1 - q0
+    a3 = (20 * dq - (8 * v1 + 12 * v0) * T) / (2 * T**3)
+    a4 = (-30 * dq + (14 * v1 + 16 * v0) * T) / (2 * T**4)
+    a5 = (12 * dq - 6 * (v1 + v0) * T) / (2 * T**5)
+    times = np.append(np.arange(0.0, T, 1.0 / rate), T)
+    t = times[:, None]
+    positions = q0 + v0 * t + a3 * t**3 + a4 * t**4 + a5 * t**5
+    return Trajectory(times=times, positions=positions)

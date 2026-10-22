@@ -22,10 +22,15 @@ def trajectory_path(name: str, directory: Path = TRAJECTORY_DIR) -> Path:
     return directory / f"{name}_motion.csv"
 
 
-def connect(ip: str, end_effector) -> trossen_arm.TrossenArmDriver:
-    """Create and configure a driver for a WXAI V0 arm at ``ip``."""
+def connect(
+    ip: str, end_effector, clear_error: bool = False, timeout: float = 20.0
+) -> trossen_arm.TrossenArmDriver:
+    """Create and configure a driver for a WXAI V0 arm at ``ip``.
+
+    ``clear_error`` clears a latched controller error instead of failing on it.
+    """
     driver = trossen_arm.TrossenArmDriver()
-    driver.configure(trossen_arm.Model.wxai_v0, end_effector, ip, False)
+    driver.configure(trossen_arm.Model.wxai_v0, end_effector, ip, clear_error, timeout)
     return driver
 
 

@@ -43,4 +43,28 @@ uv run bcd-replay
 - **Ctrl+C**: the arm moves home, then to sleep.
 
 A single press waits out the 1 s window before give starts, so a triple press can still be detected.
-Tunables: `--follower-ip`, `--window`, `--quirky-presses`, `--blend-speed` (rad/s cap used when moving between motions).
+
+Every switch between motions is a smooth blend from the arm's current position and
+velocity, timed so joints stay under 1 rad/s and 2 rad/s². Leading seconds spent at home
+are trimmed from recordings when they are loaded (the CSVs are not modified).
+
+If the arm is not reachable, the replayer keeps retrying. If the arm faults, it
+reconnects with the error cleared and resumes idling.
+
+Tunables: `--follower-ip`, `--window`, `--quirky-presses`, `--max-velocity`,
+`--max-acceleration`, `--home-tolerance`, `--retry-delay`, `--input`.
+
+## 3. Run at boot (headless)
+
+```bash
+deploy/install-service.sh              # installs, enables, and starts bcd-replay.service
+journalctl -u bcd-replay.service -f    # watch it
+sudo systemctl stop bcd-replay.service # stop (the arm parks first)
+deploy/install-service.sh --uninstall
+```
+
+The service starts at boot without a login. It reads Enter directly from any keyboard
+(USB button, keypad, wireless receiver) through `/dev/input`, so no terminal is needed.
+
+Stop the service before recording or running `bcd-replay` by hand. Only one program can
+drive the arm at a time.

@@ -1,0 +1,25 @@
+# Rendered and installed by deploy/install-service.sh; @USER@ and @DIR@ are filled in there.
+[Unit]
+Description=Business card booth arm (idle / give / quirky replay)
+After=network-online.target
+Wants=network-online.target
+# Never give up restarting: the booth must recover without anyone logging in.
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=@USER@
+# Read /dev/input/event* to see Enter presses with no terminal attached.
+SupplementaryGroups=input
+WorkingDirectory=@DIR@
+ExecStart=@DIR@/.venv/bin/bcd-replay --input evdev
+Environment=PYTHONUNBUFFERED=1
+# The program already waits for the arm and recovers from arm faults itself;
+# this catches anything else (a crash, a missing keyboard library, ...).
+Restart=always
+RestartSec=5
+# SIGTERM makes the program park the arm before exiting; give it time to.
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
