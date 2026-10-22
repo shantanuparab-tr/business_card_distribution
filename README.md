@@ -5,8 +5,8 @@ business card when someone presses Enter.
 
 | Arm      | IP            |
 |----------|---------------|
-| Leader   | 192.168.1.2   |
-| Follower | 192.168.1.4   |
+| Leader   | 192.168.1.3   |
+| Follower | 192.168.1.5   |
 
 ## Setup
 
@@ -25,7 +25,7 @@ uv run bcd-record give     # -> trajectories/give_motion.csv
 uv run bcd-record quirky   # -> trajectories/quirky_motion.csv
 ```
 
-Add `--overwrite` to re-record. CSV columns are `time_s,joint_0..joint_6`
+Add `--overwrite` to re-record. Override IPs with `--leader-ip` / `--follower-ip`. CSV columns are `time_s,joint_0..joint_6`
 (joint positions in radians; `joint_6` is the gripper), sampled at 100 Hz (`--rate`).
 
 Tip: start and end the idle recording at roughly the same pose so the loop is seamless.
@@ -43,4 +43,4 @@ uv run bcd-replay
 - **Ctrl+C**: the arm moves home, then to sleep.
 
 A single press waits out the 1 s window before give starts, so a triple press can still be detected.
-Tunables: `--window`, `--quirky-presses`, `--blend-speed` (rad/s cap used when moving between motions).
+Tunables: `--follower-ip`, `--window`, `--quirky-presses`, `--blend-speed` (rad/s cap used when moving between motions).

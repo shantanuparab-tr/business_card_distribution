@@ -20,6 +20,7 @@ Ask more questions if needed and add the answers as bullet point in this documen
 - Recorded data: follower's measured joint positions (all 7 incl. gripper) at 100 Hz → `trajectories/{idle,give,quirky}_motion.csv`.
 - Triple-press disambiguation: after the first press, wait out a 1 s window while idle keeps playing. 1–2 presses → give, 3 presses → quirky (fires as soon as the 3rd lands).
 - Presses during give/quirky are ignored. The arm returns to the idle loop afterwards.
-- Replay uses the follower only (192.168.1.4). Transitions between motions are rate-limited (1 rad/s) so the arm never jumps.
+- Replay uses the follower only. Transitions between motions are rate-limited (1 rad/s) so the arm never jumps.
 - trossen-arm pinned to 1.7.2, whose API uses `get_positions`/`get_velocities`/`get_external_efforts` (the linked demo on `main` uses `get_all_*`).
 - Ctrl+C on either tool parks the arm(s): home pose, then sleep pose.
+- IPs changed (2026-10-22): leader 192.168.1.3, follower 192.168.1.5. Both tools take `--leader-ip` / `--follower-ip` overrides.

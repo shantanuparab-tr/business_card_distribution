@@ -22,6 +22,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rate", type=float, default=100.0, help="sample rate in Hz (default: 100)")
     parser.add_argument("--force-feedback-gain", type=float, default=0.1)
     parser.add_argument("--dir", type=Path, default=config.TRAJECTORY_DIR, help="output directory")
+    parser.add_argument("--leader-ip", default=config.LEADER_IP)
+    parser.add_argument("--follower-ip", default=config.FOLLOWER_IP)
     parser.add_argument("--overwrite", action="store_true", help="replace an existing recording")
     return parser.parse_args()
 
@@ -42,8 +44,8 @@ def main() -> None:
         raise SystemExit(f"{out_path} already exists; pass --overwrite to replace it")
 
     print("Connecting to arms...")
-    leader = config.connect(config.LEADER_IP, trossen_arm.StandardEndEffector.wxai_v0_leader)
-    follower = config.connect(config.FOLLOWER_IP, trossen_arm.StandardEndEffector.wxai_v0_follower)
+    leader = config.connect(args.leader_ip, trossen_arm.StandardEndEffector.wxai_v0_leader)
+    follower = config.connect(args.follower_ip, trossen_arm.StandardEndEffector.wxai_v0_follower)
     keys = EnterListener()
 
     times: list[float] = []

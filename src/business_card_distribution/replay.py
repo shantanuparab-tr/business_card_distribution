@@ -20,6 +20,7 @@ from .trajectory import Trajectory
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--follower-ip", default=config.FOLLOWER_IP)
     parser.add_argument("--dir", type=Path, default=config.TRAJECTORY_DIR, help="trajectory directory")
     parser.add_argument(
         "--window", type=float, default=1.0,
@@ -105,7 +106,7 @@ def main() -> None:
     motions = load_all(args.dir)
 
     print("Connecting to follower...")
-    follower = config.connect(config.FOLLOWER_IP, trossen_arm.StandardEndEffector.wxai_v0_follower)
+    follower = config.connect(args.follower_ip, trossen_arm.StandardEndEffector.wxai_v0_follower)
     keys = EnterListener()
     counter = PressCounter(keys, args.window, args.quirky_presses)
     replayer = Replayer(follower, args.blend_speed)
