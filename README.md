@@ -45,21 +45,32 @@ For a feature overview, see [FEATURES.md](FEATURES.md).
 | Device              | Role                                    | IP          |
 |---------------------|-----------------------------------------|-------------|
 | WXAI V0, leader EE  | Recording only (you move it by hand)    | 192.168.1.2 |
-| WXAI V0, follower EE| Recording and replay                    | 192.168.1.4 |
-| Computer            | Runs this project                       | any free 192.168.1.x, e.g. 192.168.1.15 |
+| WXAI V0, follower EE| Recording and replay                    | 192.168.2.4 |
+| Computer, port to leader   | Runs this project                | 192.168.1.10 |
+| Computer, port to follower | Runs this project                | 192.168.2.10 |
 
 Replay needs only the follower. Recording needs both arms.
 
-The arm controllers have static IPs, so the computer's wired port needs a static
-address on the same subnet. With NetworkManager (replace `enp0s31f6` with your
-interface from `ip -br link`):
+Each arm is on its own ethernet port and its own subnet, so the two links never
+share a route. The arm controllers have static IPs, so each wired port needs a
+static address on its arm's subnet. With NetworkManager (replace `enp1s0` /
+`enp2s0` with your interfaces from `ip -br link`):
 
 ```bash
-nmcli con add type ethernet ifname enp0s31f6 con-name trossen-arms \
-    ipv4.method manual ipv4.addresses 192.168.1.15/24
-nmcli con up trossen-arms
-ping -c1 192.168.1.4    # the follower should answer
+nmcli con add type ethernet ifname enp1s0 con-name trossen-leader \
+    ipv4.method manual ipv4.addresses 192.168.1.10/24 ipv6.method disabled
+nmcli con add type ethernet ifname enp2s0 con-name trossen-follower \
+    ipv4.method manual ipv4.addresses 192.168.2.10/24 ipv6.method disabled
+nmcli con up trossen-leader && nmcli con up trossen-follower
+ping -c1 192.168.1.2    # the leader should answer
+ping -c1 192.168.2.4    # the follower should answer
 ```
+
+A factory-fresh controller is at `192.168.1.2`. To move the follower onto its
+own subnet, connect it alone on the leader port, set its manual IP to
+`192.168.2.4` (the driver's `set_manual_ip`, see the `set_manual_ip` demo in the
+trossen_arm docs), reboot it (`driver.cleanup(True)`), and move it to the
+follower port.
 
 **Firmware version matters.** This project uses `trossen-arm` **1.11.0**, which
 only connects to arms running controller firmware **v1.11.x**. A different
@@ -99,7 +110,7 @@ Common variations:
 uv run bcd-replay --window 1.5              # allow a slower triple press
 uv run bcd-replay --max-velocity 0.6        # gentler transitions between motions
 uv run bcd-replay --dir my_trajectories     # use a different set of recordings
-uv run bcd-replay --follower-ip 192.168.1.7 # follower at another address
+uv run bcd-replay --follower-ip 192.168.2.7 # follower at another address
 uv run bcd-replay --input evdev             # read Enter from any keyboard, not this terminal
 ```
 
@@ -112,7 +123,7 @@ keypad, button or wireless receiver.
 ### Set up the service
 
 1. Do the [Install](#install) and [network](#hardware-and-network) steps, and
-   check the arm answers: `ping 192.168.1.4`.
+   check the arm answers: `ping 192.168.2.4`.
 2. Check the trajectories are in `trajectories/` (they ship with the repo).
 3. Install and start the service (run as your normal user; it asks for sudo):
 
@@ -208,14 +219,14 @@ Then test with `uv run bcd-replay`, commit the new CSVs, and restart the service
 | `--force-feedback-gain` | 0.1 | How strongly the leader resists when the follower meets force |
 | `--dir` | `trajectories` | Output folder |
 | `--leader-ip` | 192.168.1.2 | Leader arm address |
-| `--follower-ip` | 192.168.1.4 | Follower arm address |
+| `--follower-ip` | 192.168.2.4 | Follower arm address |
 | `--overwrite` | off | Replace an existing recording |
 
 ### `bcd-replay`
 
 | Option | Default | Meaning |
 |---|---|---|
-| `--follower-ip` | 192.168.1.4 | Follower arm address |
+| `--follower-ip` | 192.168.2.4 | Follower arm address |
 | `--dir` | `trajectories` | Folder holding the three CSVs |
 | `--input` | `auto` | `stdin` (terminal), `evdev` (any keyboard, headless), or `auto` (terminal if there is one, else evdev) |
 | `--window` | 1.0 | Seconds after the first press to count presses |

@@ -6,7 +6,7 @@ import numpy as np
 import trossen_arm
 
 LEADER_IP = "192.168.1.2"
-FOLLOWER_IP = "192.168.1.4"
+FOLLOWER_IP = "192.168.2.4"
 
 # Joint-space poses for a WXAI V0 (6 arm joints + gripper), in radians / meters.
 HOME_POSE = np.array([0.0, np.pi / 2, np.pi / 2, 0.0, 0.0, 0.0, 0.0])
