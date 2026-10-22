@@ -217,6 +217,8 @@ Then test with `uv run bcd-replay`, commit the new CSVs, and restart the service
 | `NAME` | (required) | `idle`, `give`, or `quirky` |
 | `--rate` | 100 | Samples per second |
 | `--force-feedback-gain` | 0.1 | How strongly the leader resists when the follower meets force |
+| `--gripper-offset` | 0.0035 | Meters subtracted from the leader's gripper, so a fully closed leader fully closes the follower |
+| `--show-gripper` | off | Print leader / commanded / follower gripper positions twice a second |
 | `--dir` | `trajectories` | Output folder |
 | `--leader-ip` | 192.168.1.2 | Leader arm address |
 | `--follower-ip` | 192.168.2.4 | Follower arm address |
@@ -247,7 +249,10 @@ time_s,joint_0,joint_1,joint_2,joint_3,joint_4,joint_5,joint_6
 
 `time_s` counts seconds from the start of the recording. `joint_0`–`joint_5` are
 arm joint positions in radians, and `joint_6` is the gripper opening in meters. These are
-the follower's measured positions, sampled at 100 Hz.
+the positions *commanded* to the follower during teleop (the leader's, with the gripper
+offset applied), sampled at 100 Hz. Replay sends the follower those same commands, so it
+moves and grips exactly as it did while recording. The gripper goes slightly negative
+when fully closed; that's what makes it squeeze.
 
 ## Troubleshooting
 

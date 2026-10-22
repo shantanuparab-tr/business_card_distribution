@@ -164,6 +164,7 @@ def wait_for_arm(ip: str, retry_delay: float) -> trossen_arm.TrossenArmDriver:
             driver = config.connect(
                 ip, trossen_arm.StandardEndEffector.wxai_v0_follower, clear_error=True, timeout=retry_delay
             )
+            config.extend_gripper_close(driver)
             log.info("connected to follower at %s", ip)
             return driver
         except Exception as e:

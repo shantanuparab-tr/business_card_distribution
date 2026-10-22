@@ -2,7 +2,10 @@
 
 The leader runs in external-effort mode with force feedback from the follower
 (same scheme as trossen_arm's teleoperation demo). Press Enter to start
-capturing the follower's joint positions, Enter again to stop and save.
+capturing the positions commanded to the follower, Enter again to stop and save.
+Recording the commands rather than the follower's measured positions means
+replay sends the follower exactly what teleop did, instead of compounding its
+tracking lag (and losing grip force, which comes from commanding past contact).
 """
 
 import argparse
@@ -21,6 +24,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("name", choices=config.TRAJECTORY_NAMES, help="which motion to record")
     parser.add_argument("--rate", type=float, default=100.0, help="sample rate in Hz (default: 100)")
     parser.add_argument("--force-feedback-gain", type=float, default=0.1)
+    parser.add_argument(
+        "--gripper-offset",
+        type=float,
+        default=config.GRIPPER_OFFSET,
+        help=f"meters subtracted from the leader gripper (default: {config.GRIPPER_OFFSET})",
+    )
+    parser.add_argument(
+        "--show-gripper",
+        action="store_true",
+        help="print leader / commanded / follower gripper positions (mm) twice a second",
+    )
     parser.add_argument("--dir", type=Path, default=config.TRAJECTORY_DIR, help="output directory")
     parser.add_argument("--leader-ip", default=config.LEADER_IP)
     parser.add_argument("--follower-ip", default=config.FOLLOWER_IP)
@@ -29,12 +43,19 @@ def parse_args() -> argparse.Namespace:
 
 
 def teleop_step(
-    leader: trossen_arm.TrossenArmDriver, follower: trossen_arm.TrossenArmDriver, gain: float
-) -> None:
+    leader: trossen_arm.TrossenArmDriver,
+    follower: trossen_arm.TrossenArmDriver,
+    gain: float,
+    gripper_offset: float,
+) -> list[float]:
+    """Run one teleop cycle and return the positions commanded to the follower."""
     leader.set_all_external_efforts(
         list(-gain * np.array(follower.get_all_external_efforts())), 0.0, False
     )
-    follower.set_all_positions(leader.get_all_positions(), 0.0, False, leader.get_all_velocities())
+    target = list(leader.get_all_positions())
+    target[config.GRIPPER_INDEX] -= gripper_offset
+    follower.set_all_positions(target, 0.0, False, leader.get_all_velocities())
+    return target
 
 
 def main() -> None:
@@ -46,6 +67,7 @@ def main() -> None:
     print("Connecting to arms...")
     leader = config.connect(args.leader_ip, trossen_arm.StandardEndEffector.wxai_v0_leader)
     follower = config.connect(args.follower_ip, trossen_arm.StandardEndEffector.wxai_v0_follower)
+    config.extend_gripper_close(follower, args.gripper_offset)
     keys = StdinEnterListener()
 
     times: list[float] = []
@@ -62,9 +84,19 @@ def main() -> None:
         period = 1.0 / args.rate
         recording = False
         next_sample = 0.0
+        next_show = 0.0
         while True:
-            teleop_step(leader, follower, args.force_feedback_gain)
+            commanded = teleop_step(leader, follower, args.force_feedback_gain, args.gripper_offset)
             now = time.monotonic()
+
+            if args.show_gripper and now >= next_show:
+                print(
+                    f"gripper mm  leader {leader.get_gripper_position() * 1000:6.2f}"
+                    f"  commanded {commanded[config.GRIPPER_INDEX] * 1000:6.2f}"
+                    f"  follower {follower.get_gripper_position() * 1000:6.2f}"
+                    f"  follower effort {follower.get_gripper_effort():6.2f}"
+                )
+                next_show = now + 0.5
 
             if keys.poll() is not None:
                 if recording:
@@ -75,7 +107,7 @@ def main() -> None:
 
             if recording and now >= next_sample:
                 times.append(now)
-                positions.append(list(follower.get_all_positions()))
+                positions.append(commanded)
                 # Skip missed slots rather than bursting to catch up after a slow iteration.
                 next_sample = max(next_sample + period, now)
     except KeyboardInterrupt:
