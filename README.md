@@ -5,8 +5,8 @@ business card when someone presses Enter.
 
 | Arm      | IP            |
 |----------|---------------|
-| Leader   | 192.168.1.3   |
-| Follower | 192.168.1.5   |
+| Leader   | 192.168.1.2   |
+| Follower | 192.168.1.4   |
 
 ## Setup
 

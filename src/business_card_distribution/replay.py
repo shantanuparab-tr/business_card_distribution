@@ -52,7 +52,7 @@ class Replayer:
 
     def blend_to(self, pose: np.ndarray) -> None:
         """Move to ``pose`` at no more than ``blend_speed`` on any joint, so a jump is never commanded."""
-        delta = np.max(np.abs(pose - np.array(self.driver.get_positions())))
+        delta = np.max(np.abs(pose - np.array(self.driver.get_all_positions())))
         if delta < 1e-3:
             return
         config.move_to(self.driver, pose, max(delta / self.blend_speed, 0.2))

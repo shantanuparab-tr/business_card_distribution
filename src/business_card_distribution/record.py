@@ -32,9 +32,9 @@ def teleop_step(
     leader: trossen_arm.TrossenArmDriver, follower: trossen_arm.TrossenArmDriver, gain: float
 ) -> None:
     leader.set_all_external_efforts(
-        list(-gain * np.array(follower.get_external_efforts())), 0.0, False
+        list(-gain * np.array(follower.get_all_external_efforts())), 0.0, False
     )
-    follower.set_all_positions(leader.get_positions(), 0.0, False, leader.get_velocities())
+    follower.set_all_positions(leader.get_all_positions(), 0.0, False, leader.get_all_velocities())
 
 
 def main() -> None:
@@ -75,7 +75,7 @@ def main() -> None:
 
             if recording and now >= next_sample:
                 times.append(now)
-                positions.append(list(follower.get_positions()))
+                positions.append(list(follower.get_all_positions()))
                 # Skip missed slots rather than bursting to catch up after a slow iteration.
                 next_sample = max(next_sample + period, now)
     except KeyboardInterrupt:
