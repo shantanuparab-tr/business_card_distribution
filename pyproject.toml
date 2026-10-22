@@ -1,0 +1,21 @@
+[project]
+name = "business-card-distribution"
+version = "0.1.0"
+description = "Record and replay WXAI V0 arm trajectories for handing out business cards"
+readme = "README.md"
+authors = [
+    { name = "shantanuparab-tr", email = "shantanu@trossenrobotics.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.5.4",
+    "trossen-arm==1.7.2",
+]
+
+[project.scripts]
+bcd-record = "business_card_distribution.record:main"
+bcd-replay = "business_card_distribution.replay:main"
+
+[build-system]
+requires = ["uv_build>=0.12.21,<0.13.0"]
+build-backend = "uv_build"
