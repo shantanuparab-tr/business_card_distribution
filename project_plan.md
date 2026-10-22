@@ -49,3 +49,17 @@ Ask more questions if needed, and add the answers as bullet points in this docum
 - **5. Waiting for the arms:** the program retries the connection every 5 s indefinitely (`--retry-delay`), logging the wait once a minute.
 - **6. Recovering from failures:** any arm error while running triggers a reconnect with the controller error cleared, after which the arm resumes idling from home. Note: errors are cleared automatically with no human check, so a real collision fault will also be cleared and the arm will resume.
 - **7. Headless Enter detection:** the service reads key events directly from every keyboard under `/dev/input` (via `evdev`), including keyboards plugged in after boot. The service runs with the `input` group so it can read them. Enter and keypad Enter both count; holding a key down counts once.
+
+## Final requests
+
+1. Finalize the project: commit everything to the git repository and make it public.
+2. Ship the trajectories with the project.
+3. Show every way to use the project in the README.
+4. Explain how to record, replay, and use the service.
+5. Include instructions for setting up the service.
+
+## Final requests — how they were addressed
+
+- **1.** All work is committed and pushed to https://github.com/shantanuparab-tr/business_card_distribution, which is now public.
+- **2.** The three recordings (re-recorded 2026-10-22) are committed in `trajectories/` and used by default, so the demo runs right after cloning.
+- **3–5.** `README.md` covers: how the demo behaves; hardware, network and firmware requirements; installation; three usage modes (replay in a terminal, run as a boot service, record new trajectories); step-by-step service setup and day-to-day service commands; a full option reference for both commands; the CSV format; and troubleshooting.
