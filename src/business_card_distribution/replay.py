@@ -102,7 +102,12 @@ class Replayer:
     def play(self, traj: Trajectory, should_stop: Callable[[], bool] | None = None) -> bool:
         """Blend into ``traj`` and stream it. Returns True if ``should_stop`` cut it short."""
         velocities = traj.velocities()
-        self.go_to(traj.positions[0], velocities[0])
+        # A looping motion whose last sample is its first runs straight back in;
+        # blending there would stall the arm for the blend's minimum duration.
+        already_there = (np.max(np.abs(self.position - traj.positions[0])) < 1e-3
+                         and np.max(np.abs(self.velocity - velocities[0])) < 0.1)
+        if not already_there:
+            self.go_to(traj.positions[0], velocities[0])
         return self._stream(traj, should_stop, velocities)
 
     def _stream(
@@ -171,12 +176,12 @@ def wait_for_arm(ip: str, retry_delay: float) -> trossen_arm.TrossenArmDriver:
             # Log the first failure and then once a minute, so a long wait doesn't flood the journal.
             if attempts == 1 or attempts % max(1, int(60 / retry_delay)) == 0:
                 log.warning("follower at %s not reachable yet (%s); retrying every %.0f s", ip, e, retry_delay)
+                log.warning("network: %s", network.diagnose(ip, config.FOLLOWER_CONNECTION))
             time.sleep(retry_delay)
 
 
 def run(replayer: Replayer, motions: dict[str, Trajectory], counter: PressCounter) -> None:
     """Idle, react to presses, repeat. Only returns by raising."""
-                log.warning("network: %s", network.diagnose(ip, config.FOLLOWER_CONNECTION))
     replayer.go_to(config.HOME_POSE)
     counter.reset()
     log.info("idling. Enter = give, %dx Enter within %.1f s = quirky", counter.quirky_presses, counter.window)
