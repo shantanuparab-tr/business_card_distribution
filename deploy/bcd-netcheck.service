@@ -1,9 +1,11 @@
 # Installed by deploy/install-service.sh; triggered by bcd-netcheck.timer.
 [Unit]
-Description=Keep the follower arm's ethernet port on its connection (bcd-replay)
+Description=Keep the follower arm's ethernet port working (bcd-replay)
 After=NetworkManager.service
 Wants=NetworkManager.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/sbin/bcd-netcheck trossen-follower
+ExecStart=/usr/local/sbin/bcd-netcheck trossen-follower=192.168.2.4
+# A driver reset waits for the port to come back; never let one hang the timer.
+TimeoutStartSec=60

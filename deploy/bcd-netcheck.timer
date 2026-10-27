@@ -1,10 +1,10 @@
 # Installed by deploy/install-service.sh.
 [Unit]
-Description=Check the follower arm's ethernet port every 30 s
+Description=Check the follower arm's ethernet port every 15 s
 
 [Timer]
 OnBootSec=20s
-OnUnitActiveSec=30s
+OnUnitActiveSec=15s
 AccuracySec=5s
 
 [Install]

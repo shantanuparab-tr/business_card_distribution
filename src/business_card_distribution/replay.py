@@ -171,6 +171,7 @@ def wait_for_arm(ip: str, retry_delay: float) -> trossen_arm.TrossenArmDriver:
             )
             config.extend_gripper_close(driver)
             log.info("connected to follower at %s", ip)
+            check_controller_network(driver, ip)
             return driver
         except Exception as e:
             # Log the first failure and then once a minute, so a long wait doesn't flood the journal.
@@ -178,6 +179,20 @@ def wait_for_arm(ip: str, retry_delay: float) -> trossen_arm.TrossenArmDriver:
                 log.warning("follower at %s not reachable yet (%s); retrying every %.0f s", ip, e, retry_delay)
                 log.warning("network: %s", network.diagnose(ip, config.FOLLOWER_CONNECTION))
             time.sleep(retry_delay)
+
+
+def check_controller_network(driver: trossen_arm.TrossenArmDriver, ip: str) -> None:
+    """Warn if the controller's stored IP settings won't survive its next reboot on this port."""
+    host_address = network.port_address(config.FOLLOWER_CONNECTION)
+    if host_address is None:
+        return
+    try:
+        problems = network.controller_problems(driver, ip, host_address)
+    except Exception as e:
+        log.warning("could not read the controller's network settings: %s", e)
+        return
+    for problem in problems:
+        log.warning("controller network setting: %s; fix it with the set_manual_ip demo", problem)
 
 
 def run(replayer: Replayer, motions: dict[str, Trajectory], counter: PressCounter) -> None:
@@ -229,6 +244,10 @@ def main() -> None:
         except Exception:
             log.exception("arm failure; reconnecting with the error cleared in %.0f s", args.retry_delay)
             if driver is not None:
+                try:
+                    log.warning("controller error: %s", driver.get_error_information())
+                except Exception:
+                    pass
                 try:
                     driver.cleanup()
                 except Exception:
