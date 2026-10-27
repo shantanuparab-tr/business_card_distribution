@@ -170,6 +170,13 @@ To change options (for example `--window 1.5`), edit the `ExecStart=` line in
   collision. Keep the area around it clear.
 - **The program crashes:** systemd restarts it after 5 s, indefinitely.
 - **Keyboard plugged in late or swapped:** picked up within a few seconds.
+- **Follower port taken over by another network profile** (for example someone
+  runs an old `nmcli con up ...` from a previous setup): `bcd-netcheck.timer`
+  notices within 30 s and brings `trossen-follower` back up. It only acts when
+  the port has a link; see `journalctl -u bcd-netcheck.service`.
+- **Follower unreachable:** alongside the retry warning, the log says why from
+  the computer's side: no link on the port (arm power or cable), the port has the
+  wrong address, or the port is fine and the arm itself isn't answering.
 
 The service reads keyboards through `/dev/input`. It is granted the `input`
 group for that, so your user account doesn't need it. Every key press on the

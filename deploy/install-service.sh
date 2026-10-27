@@ -9,12 +9,13 @@ set -euo pipefail
 
 UNIT=bcd-replay.service
 DEST=/etc/systemd/system/$UNIT
+NETCHECK=/usr/local/sbin/bcd-netcheck
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 USER_NAME="$(id -un)"
 
 if [[ "${1:-}" == "--uninstall" ]]; then
-    sudo systemctl disable --now "$UNIT" || true
-    sudo rm -f "$DEST"
+    sudo systemctl disable --now "$UNIT" bcd-netcheck.timer || true
+    sudo rm -f "$DEST" "$NETCHECK" /etc/systemd/system/bcd-netcheck.{service,timer}
     sudo systemctl daemon-reload
     echo "Removed $UNIT"
     exit 0
@@ -32,11 +33,18 @@ done
 
 sed -e "s|@USER@|$USER_NAME|g" -e "s|@DIR@|$DIR|g" "$DIR/deploy/bcd-replay.service.in" \
     | sudo tee "$DEST" >/dev/null
+# Root helper that puts the follower port back on its connection if another
+# profile takes it over. Copied out of the repo so root never runs a user-editable file.
+sudo install -m 755 "$DIR/deploy/bcd-netcheck.sh" "$NETCHECK"
+sudo install -m 644 "$DIR/deploy/bcd-netcheck.service" "$DIR/deploy/bcd-netcheck.timer" /etc/systemd/system/
+
 sudo systemctl daemon-reload
+sudo systemctl enable --now bcd-netcheck.timer
 sudo systemctl enable --now "$UNIT"
 
 echo
 echo "Installed and started $UNIT (runs as $USER_NAME from $DIR)."
+echo "Installed bcd-netcheck.timer (keeps the follower port on trossen-follower)."
 echo "  Logs:    journalctl -u $UNIT -f"
 echo "  Stop:    sudo systemctl stop $UNIT     (the arm parks first)"
 echo "  Remove:  $0 --uninstall"

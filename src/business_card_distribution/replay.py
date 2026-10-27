@@ -19,7 +19,7 @@ from pathlib import Path
 import numpy as np
 import trossen_arm
 
-from . import config, trajectory
+from . import config, network, trajectory
 from .keyboard import EnterListener, make_listener
 from .trajectory import Trajectory
 
@@ -176,6 +176,7 @@ def wait_for_arm(ip: str, retry_delay: float) -> trossen_arm.TrossenArmDriver:
 
 def run(replayer: Replayer, motions: dict[str, Trajectory], counter: PressCounter) -> None:
     """Idle, react to presses, repeat. Only returns by raising."""
+                log.warning("network: %s", network.diagnose(ip, config.FOLLOWER_CONNECTION))
     replayer.go_to(config.HOME_POSE)
     counter.reset()
     log.info("idling. Enter = give, %dx Enter within %.1f s = quirky", counter.quirky_presses, counter.window)
