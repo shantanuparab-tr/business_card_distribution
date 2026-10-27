@@ -64,7 +64,9 @@ sudo install -m 644 "$DIR/deploy/bcd-netcheck.service" "$DIR/deploy/bcd-netcheck
 
 sudo systemctl daemon-reload
 sudo systemctl enable --now bcd-netcheck.timer
-sudo systemctl enable --now "$UNIT"
+sudo systemctl enable "$UNIT"
+# restart, not start: a running service must pick up the new code (the arm parks first).
+sudo systemctl restart "$UNIT"
 
 echo
 echo "Installed and started $UNIT (runs as $USER_NAME from $DIR)."

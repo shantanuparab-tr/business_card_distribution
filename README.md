@@ -173,14 +173,16 @@ To change options (for example `--window 1.5`), edit the `ExecStart=` line in
 - **Follower port taken over by another network profile** (for example someone
   runs an old `nmcli con up ...` from a previous setup): `bcd-netcheck.timer`
   notices within 15 s and brings `trossen-follower` back up.
-- **Follower port stuck** (the link dropped and never came back, or the link is
-  up but the arm stopped answering, typically after heavy traffic on the link):
-  `bcd-netcheck` resets the port in software. After about 30 s it toggles the
-  link, and every third reset rebinds the NIC driver, a full reset of that port
-  alone. While the problem lasts it backs off to one reset every 5 minutes, so
-  an arm that is simply switched off costs nothing. A port where `bcd-replay`
-  holds a live session, or where the arm answers ping, is never touched. See
-  `journalctl -u bcd-netcheck.service`.
+- **Follower port stuck:** if the link is up but the arm stops answering
+  (typically after heavy traffic on the link), `bcd-netcheck` flushes the port's
+  neighbor entries and re-applies `trossen-follower` after about 30 s, without
+  dropping the link. If the link is gone, it toggles the link to retry
+  negotiation once a minute, rebinding the NIC driver every third time. On the
+  booth, a lost link has come back after 7 to 15 minutes. A port where
+  `bcd-replay` holds a live session, or where the arm answers ping, is never
+  touched. See `journalctl -u bcd-netcheck.service`.
+- **Never take the follower link down by hand** (`ip link set ... down`) while
+  it works: the controller's port can take minutes to renegotiate afterwards.
 - **Follower unreachable:** alongside the retry warning, the log says why from
   the computer's side: no link on the port (arm power or cable), the port has the
   wrong address, or the port is fine and the arm itself isn't answering.
@@ -286,7 +288,7 @@ when fully closed; that's what makes it squeeze.
 | Enter does nothing under the service | Check `journalctl` for `listening for Enter on ...` lines naming your device. |
 | `Missing trajectories` | Record the missing motion, or point `--dir` at the right folder. |
 | `bcd-record` or `bcd-replay` can't connect while the service runs | Only one program can drive the arm. `sudo systemctl stop bcd-replay.service`. |
-| `bcd-netcheck` log: `still no link after the reset` | The port is fine as far as software can tell; check the arm's power and cable. |
+| `bcd-netcheck` log: `still no link after the reset` for over 15 minutes | Check the arm's power and cable; power-cycling the arm brings its port back. |
 | Arm jerks between motions | Lower `--max-velocity` / `--max-acceleration`. |
 
 ## License

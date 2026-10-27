@@ -8,21 +8,21 @@
 # TCP session to the arm, or the arm answers ping. Otherwise:
 #   - link up but another profile (or no address) on the port: bring the
 #     connection back up. This undoes e.g. an old setup's `nmcli con up`.
-#   - no link, or link and address but the arm is silent: reset the port in
-#     software, backing off while it stays down. The igc NICs on the booth PC
-#     can drop the 100 Mbps link to the controller and never renegotiate, and a
-#     flooded link can leave stale neighbor entries and queues behind; both
-#     clear with a reset. Most resets toggle the link; every third one rebinds
-#     the NIC's driver, a full reset of that one port.
-# If the arm is simply powered off, the resets are harmless and back off to one
-# every 5 minutes.
+#   - link and address but the arm is silent (e.g. after a flood of traffic):
+#     flush the port's neighbor entries and re-apply the connection. This never
+#     drops the link: on the booth, a dropped link stays down for minutes before
+#     the controller's port renegotiates.
+#   - no link: toggle the link to retry negotiation, and every third time rebind
+#     the NIC's driver, a full reset of that one port. Nothing is lost by trying,
+#     so it keeps trying once a minute; that is how the booth recovered from a
+#     7-minute outage.
 set -uo pipefail
 
 STATE_DIR=/run/bcd-netcheck
 # Consecutive bad checks after which a reset is attempted (15 s apart), then
 # every RESET_EVERY checks while it stays bad.
 RESET_AT=(2 4 8)
-RESET_EVERY=20
+RESET_EVERY=4
 # The controller's TCP server; a live session means the arm is fine.
 ARM_TCP_PORT=50001
 
@@ -46,8 +46,13 @@ should_reset() {
 
 toggle_link() {
     local dev=$1
-    ip neigh flush dev "$dev" 2>/dev/null
     ip link set dev "$dev" down && sleep 2 && ip link set dev "$dev" up
+}
+
+refresh_port() {
+    local dev=$1 con=$2
+    ip neigh flush dev "$dev" 2>/dev/null
+    nmcli con up "$con" >/dev/null
 }
 
 rebind_driver() {
@@ -89,11 +94,14 @@ for arg in "$@"; do
         problem="no link"
     fi
 
-    read -r fails resets < "$state" 2>/dev/null || { fails=0; resets=0; }
+    fails=0 resets=0
+    [[ -f "$state" ]] && read -r fails resets < "$state"
     fails=$(( fails + 1 ))
     if should_reset "$fails"; then
-        resets=$(( resets + 1 ))
-        if (( resets % 3 == 0 )); then
+        if has_link "$dev"; then
+            echo "$dev: $problem for $fails checks; flushing neighbors and re-applying '$con'"
+            refresh_port "$dev" "$con" || echo "$dev: re-applying '$con' failed" >&2
+        elif (( ++resets % 3 == 0 )); then
             echo "$dev: $problem for $fails checks; resetting the NIC driver"
             rebind_driver "$dev" || echo "$dev: driver reset failed" >&2
         else
@@ -105,7 +113,7 @@ for arg in "$@"; do
         if has_link "$dev"; then
             nmcli con up "$con" >/dev/null && echo "$dev: link is back; '$con' is up"
         else
-            echo "$dev: still no link after the reset (is the arm powered and cabled?)"
+            echo "$dev: still no link after the reset; retrying (if this lasts, check the arm's power and cable)"
         fi
     fi
     echo "$fails $resets" > "$state"
